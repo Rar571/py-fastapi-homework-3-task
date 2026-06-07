@@ -1,13 +1,11 @@
 import secrets
 from datetime import datetime, timezone, timedelta
-from typing import cast
 
 from fastapi.responses import JSONResponse
-from fastapi import APIRouter, Depends, status, HTTPException, Response
-from sqlalchemy import select, delete
-from sqlalchemy.exc import SQLAlchemyError
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session, joinedload
+
 
 from config import get_jwt_auth_manager, get_settings, BaseAppSettings
 from database import (
@@ -20,7 +18,7 @@ from database import (
     RefreshTokenModel,
 )
 from database.validators.accounts import validate_password_strength
-from exceptions import BaseSecurityError, TokenExpiredError, InvalidTokenError
+from exceptions import TokenExpiredError, InvalidTokenError
 from schemas.accounts import (
     UserRegistrationRequestSchema,
     UserActivation,
@@ -50,15 +48,15 @@ async def register_user(
         )
     try:
         hashed_password = hash_password(user.password)
-        group = await db.execute(
+        group_result = await db.execute(
             select(UserGroupModel).where(UserGroupModel.name == UserGroupEnum.USER)
         )
-        token = secrets.token_urlsafe(32)
-        group = group.scalar_one_or_none()
+        group = group_result.scalar_one_or_none()
         if group is None:
             raise HTTPException(
                 status_code=500, detail="An error occurred during user creation."
             )
+        token = secrets.token_urlsafe(32)
         user_create = UserModel(
             email=user.email, _hashed_password=hashed_password, group_id=group.id
         )
@@ -230,7 +228,6 @@ async def user_login(
         select(UserModel).where(UserModel.email == user_data.email)
     )
     user = user_result.scalar_one_or_none()
-    print({"Thats a user": user})
     if user is None:
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
