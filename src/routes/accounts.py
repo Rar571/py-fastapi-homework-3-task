@@ -17,7 +17,6 @@ from database import (
     PasswordResetTokenModel,
     RefreshTokenModel,
 )
-from database.validators.accounts import validate_password_strength
 from exceptions import TokenExpiredError, InvalidTokenError
 from schemas.accounts import (
     UserRegistrationRequestSchema,
@@ -72,7 +71,6 @@ async def register_user(
         await db.refresh(user_create)
     except Exception as e:
         await db.rollback()
-        print(f"Error: {e}")
         raise HTTPException(
             status_code=500, detail="An error occurred during user creation."
         )
@@ -219,11 +217,6 @@ async def user_login(
     jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager),
     settings: BaseAppSettings = Depends(get_settings),
 ):
-    try:
-        validate_password_strength(user_data.password)
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid email or password.")
-
     user_result = await db.execute(
         select(UserModel).where(UserModel.email == user_data.email)
     )
