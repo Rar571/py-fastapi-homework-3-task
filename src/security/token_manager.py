@@ -81,8 +81,7 @@ class JWTAuthManager(JWTAuthManagerInterface):
             )
         except ExpiredSignatureError:
             raise TokenExpiredError
-        except JWTError as error:
-            print(error)
+        except JWTError:
             raise InvalidTokenError
 
     def verify_refresh_token_or_raise(self, token: str) -> None:

@@ -131,7 +131,7 @@ async def reset_user_password(
 ):
     user_result = await db.execute(
         select(UserModel).where(
-            UserModel.email == user_data.email, UserModel.is_active == True
+            UserModel.email == user_data.email, UserModel.is_active is True
         )
     )
     user = user_result.scalar_one_or_none()
