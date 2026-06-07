@@ -69,7 +69,7 @@ async def register_user(
         db.add(activation_token)
         await db.commit()
         await db.refresh(user_create)
-    except Exception as e:
+    except Exception:
         await db.rollback()
         raise HTTPException(
             status_code=500, detail="An error occurred during user creation."
@@ -131,7 +131,7 @@ async def reset_user_password(
 ):
     user_result = await db.execute(
         select(UserModel).where(
-            UserModel.email == user_data.email, UserModel.is_active is True
+            UserModel.email == user_data.email
         )
     )
     user = user_result.scalar_one_or_none()
@@ -139,6 +139,12 @@ async def reset_user_password(
         return {
             "message": "If you are registered, you will receive an email with instructions."
         }
+
+    if not user.is_active:
+        return {
+            "message": "If you are registered, you will receive an email with instructions."
+        }
+
     await db.flush()
     old_token_result = await db.execute(
         select(PasswordResetTokenModel).where(
